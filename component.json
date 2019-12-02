@@ -1,0 +1,6 @@
+{
+  "id": 1,
+  "componente": "nome_do_sensor",
+  "porta": [10, 11],
+  "ambiente": "nome_do_ambiente"
+}
