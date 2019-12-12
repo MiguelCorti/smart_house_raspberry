@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 from flask import Flask
 from flask import request
+import json
 from gpiozero import Motor, LED
 from werkzeug.routing import BaseConverter
 
@@ -29,7 +30,7 @@ def insert_component():
     content = request.get_json()
     response = collection.insert(content)
     result = {"id": str(response)}
-    return result
+    return json.dumps(result)
 
 
 @app.route("/control-motor/<string:comp_id>/<float:speed>/<int:mode>", methods=['GET'])
@@ -48,7 +49,7 @@ def control_motor(comp_id, speed, mode):
     return "Sucesso", 200
 
 
-@app.route("/control-led/<int:comp_id>/<int:mode>")
+@app.route("/control-led/<string:comp_id>/<int:mode>", methods=['GET'])
 def control_led(comp_id, mode):
     led_data = find_component_db(comp_id)
     if led_data is None:
