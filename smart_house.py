@@ -23,6 +23,36 @@ app.url_map.converters['int_list'] = IntListConverter
 client = MongoClient("localhost", 27017)
 table = client["test"]
 collection = table["sensores"]
+components = {}
+ports_used = set()
+
+
+def check_valid_document(document):
+    return 'ports' in document and 'env' in document and 'component' in document;
+
+
+def load_from_db():
+    all_data = collection.find()
+    for data in all_data:
+        if check_valid_document(data):
+            comp_id = data['_id']
+            ports = data['ports']
+            used_port = False
+            for port in ports:
+                if port in ports_used:
+                    used_port = True
+            if used_port:
+                continue
+            if data['component'] == 'led':
+                components[comp_id] = LED(ports[0])
+                ports_used.add(ports[0])
+            elif data['component'] == 'motor':
+                if len(ports) < 2:
+                    continue
+                components[comp_id] = Motor(ports[0], ports[1])
+                ports_used.add(ports[0])
+                ports_used.add(ports[1])
+    return
 
 
 # definição de funções das páginas
@@ -36,13 +66,9 @@ def insert_component():
 
 @app.route("/control-motor/<string:comp_id>/<float:speed>/<int:mode>", methods=['GET'])
 def control_motor(comp_id, speed, mode):
-    motor_data = find_component_db(comp_id)
-    if motor_data is None:
+    if comp_id not in components:
         return "Erro ao encontrar motor", 500
-    port_list = motor_data['ports']
-    if len(port_list) < 2:
-        return "Motor deve ter duas portas especificadas", 500
-    motor = Motor(port_list[0], port_list[1])
+    motor = components[comp_id]
     if mode > 0:
         motor.forward(speed)
     else:
@@ -52,11 +78,9 @@ def control_motor(comp_id, speed, mode):
 
 @app.route("/control-led/<string:comp_id>/<int:mode>", methods=['GET'])
 def control_led(comp_id, mode):
-    led_data = find_component_db(comp_id)
-    if led_data is None:
+    if comp_id not in components:
         return "Erro ao encontrar led", 500
-    port = led_data['ports'][0]
-    led = LED(port)
+    led = components[comp_id]
     if mode > 0:
         led.on()
     else:
@@ -69,5 +93,6 @@ def find_component_db(comp_id):
     return collection.find_one(data)
 
 # rode o servidor
+load_from_db()
 app.run(port=5000, debug=False)
 
