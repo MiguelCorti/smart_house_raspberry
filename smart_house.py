@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 from flask import Flask
 from flask import request
 import json
@@ -64,7 +65,7 @@ def control_led(comp_id, mode):
 
 
 def find_component_db(comp_id):
-    data = {"_id": comp_id}
+    data = {"_id": ObjectId(comp_id)}
     return collection.find_one(data)
 
 # rode o servidor
