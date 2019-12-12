@@ -20,38 +20,46 @@ class IntListConverter(BaseConverter):
 app = Flask(__name__)
 app.url_map.converters['int_list'] = IntListConverter
 
+# systemctl status mongodb
 client = MongoClient("localhost", 27017)
-table = client["test"]
-collection = table["sensores"]
+smart_house_db = client["smart_house"]
+components_table = smart_house_db["component"]
+time_constraint_table = smart_house_db["time_constraint"]
 components = {}
 ports_used = set()
 
 
-def check_valid_document(document):
-    return 'ports' in document and 'env' in document and 'component' in document;
+def find_component_db(comp_id):
+    data = {"_id": ObjectId(comp_id)}
+    return components_table.find_one(data)
+
+
+def check_valid_component(document):
+    return 'ports' in document and 'env' in document and 'component' in document
+
+
+def add_component(comp_id, data):
+    if not check_valid_component(data):
+        return False
+    ports = data['ports']
+    for port in ports:
+        if port in ports_used:
+            return False
+    if data['component'] == 'led':
+        components[comp_id] = LED(int(ports[0]))
+    elif data['component'] == 'motor':
+        if len(ports) < 2:
+            return False
+        components[comp_id] = Motor(int(ports[0]), int(ports[1]))
+    for port in ports:
+        ports_used.add(port)
+    return True
 
 
 def load_from_db():
-    all_data = collection.find()
+    all_data = components_table.find()
     for data in all_data:
-        if check_valid_document(data):
-            comp_id = data['_id']
-            ports = data['ports']
-            used_port = False
-            for port in ports:
-                if port in ports_used:
-                    used_port = True
-            if used_port:
-                continue
-            if data['component'] == 'led':
-                components[comp_id] = LED(ports[0])
-                ports_used.add(ports[0])
-            elif data['component'] == 'motor':
-                if len(ports) < 2:
-                    continue
-                components[comp_id] = Motor(ports[0], ports[1])
-                ports_used.add(ports[0])
-                ports_used.add(ports[1])
+        add_component(str(data['_id']), data)
     return
 
 
@@ -59,9 +67,22 @@ def load_from_db():
 @app.route("/insert-component", methods=['POST'])
 def insert_component():
     content = request.get_json()
-    response = collection.insert(content)
-    result = {"id": str(response)}
-    return json.dumps(result)
+    if not check_valid_component(content):
+        return "Esse documento não é válido", 500
+    comp_id = str(components_table.insert(content))
+    could_add = add_component(comp_id, content)
+    if not could_add:
+        return "As portas não são válidas", 500
+    result = {"id": comp_id}
+    return json.dumps(result), 200
+
+
+@app.route("/insert-time-constraint/<string:comp_id>/<string:action_time>/<float:mode>", methods=['GET'])
+def insert_time_constraint(comp_id, action_time, mode):
+    insert_document = {'comp_id': comp_id, 'action_time': action_time, 'mode': mode}
+    comp_id = str(time_constraint_table.insert(insert_document))
+    result = {"id": comp_id}
+    return json.dumps(result), 200
 
 
 @app.route("/control-motor/<string:comp_id>/<float:speed>/<int:mode>", methods=['GET'])
@@ -78,6 +99,7 @@ def control_motor(comp_id, speed, mode):
 
 @app.route("/control-led/<string:comp_id>/<int:mode>", methods=['GET'])
 def control_led(comp_id, mode):
+    print(components)
     if comp_id not in components:
         return "Erro ao encontrar led", 500
     led = components[comp_id]
@@ -87,12 +109,8 @@ def control_led(comp_id, mode):
         led.off()
     return "Sucesso!", 200
 
-
-def find_component_db(comp_id):
-    data = {"_id": ObjectId(comp_id)}
-    return collection.find_one(data)
-
 # rode o servidor
 load_from_db()
 app.run(port=5000, debug=False)
+
 
