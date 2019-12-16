@@ -77,11 +77,11 @@ def load_from_db():
 def insert_component():
     content = request.get_json()
     if not check_valid_component(content):
-        return "Esse documento não é válido", 500
+        return "Esse documento não é válido", 400
     comp_id = str(components_table.insert(content))
     could_add = add_component(comp_id, content)
     if not could_add:
-        return "As portas não são válidas", 500
+        return "As portas não são válidas", 400
     result = {"id": comp_id}
     return json.dumps(result), 200
 
@@ -105,7 +105,7 @@ def insert_sensor_config():
 @app.route("/control-motor/<string:comp_id>/<float:speed>/<int:mode>", methods=['GET'])
 def control_motor(comp_id, speed, mode):
     if comp_id not in components:
-        return "Erro ao encontrar motor", 500
+        return "Erro ao encontrar motor", 400
     motor = components[comp_id]
     if mode > 0:
         motor.forward(speed)
@@ -118,7 +118,7 @@ def control_motor(comp_id, speed, mode):
 def control_led(comp_id, mode):
     print(components)
     if comp_id not in components:
-        return "Erro ao encontrar led", 500
+        return "Erro ao encontrar led", 400
     led = components[comp_id]
     if mode > 0:
         led.on()
