@@ -25,6 +25,7 @@ client = MongoClient("localhost", 27017)
 smart_house_db = client["smart_house"]
 components_table = smart_house_db["component"]
 time_constraint_table = smart_house_db["time_constraint"]
+sensor_config_table = smart_house_db["sensor_config"]
 components = {}
 ports_used = set()
 
@@ -81,6 +82,14 @@ def insert_component():
 def insert_time_constraint(comp_id, action_time, mode):
     insert_document = {'comp_id': comp_id, 'action_time': action_time, 'mode': mode}
     comp_id = str(time_constraint_table.insert(insert_document))
+    result = {"id": comp_id}
+    return json.dumps(result), 200
+
+
+@app.route("/insert-sensor-config/<string:sensor_id>/<float:threshold>/<string:comp_id>/<float:mode>", methods=['GET'])
+def insert_sensor_config(sensor_id, threshold, comp_id, mode):
+    insert_document = {'sensor_id': sensor_id, 'threshold': threshold, 'comp_id': comp_id, 'mode': mode}
+    comp_id = str(sensor_config_table.insert(insert_document))
     result = {"id": comp_id}
     return json.dumps(result), 200
 
