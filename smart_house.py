@@ -3,7 +3,7 @@ from bson.objectid import ObjectId
 from flask import Flask
 from flask import request
 import json
-from gpiozero import Motor, LED
+from gpiozero import Motor, LED, DistanceSensor, MotionSensor, LightSensor
 from werkzeug.routing import BaseConverter
 
 
@@ -47,11 +47,19 @@ def add_component(comp_id, data):
         if port in ports_used:
             return False
     if data['component'] == 'led':
-        components[comp_id] = LED(int(ports[0]))
+        components[comp_id] = (data['component'], LED(int(ports[0])))
     elif data['component'] == 'motor':
         if len(ports) < 2:
             return False
-        components[comp_id] = Motor(int(ports[0]), int(ports[1]))
+        components[comp_id] = (data['component'], Motor(int(ports[0]), int(ports[1])))
+    elif data['component'] == 'distance_sensor':
+        if len(ports) < 2:
+            return False
+        components[comp_id] = (data['component'], DistanceSensor(trigger=int(ports[0]), echo=int(ports[1])))
+    elif data['component'] == 'motion_sensor':
+        components[comp_id] = (data['component'], MotionSensor(int(ports[0])))
+    elif data['component'] == 'light_sensor':
+        components[comp_id] = (data['component'], LightSensor(int(ports[0])))
     for port in ports:
         ports_used.add(port)
     return True
@@ -78,18 +86,18 @@ def insert_component():
     return json.dumps(result), 200
 
 
-@app.route("/insert-time-constraint/<string:comp_id>/<string:action_time>/<float:mode>", methods=['GET'])
-def insert_time_constraint(comp_id, action_time, mode):
-    insert_document = {'comp_id': comp_id, 'action_time': action_time, 'mode': mode}
-    comp_id = str(time_constraint_table.insert(insert_document))
+@app.route("/insert-time-constraint", methods=['POST'])
+def insert_time_constraint():
+    content = request.get_json()
+    comp_id = str(time_constraint_table.insert(content))
     result = {"id": comp_id}
     return json.dumps(result), 200
 
 
-@app.route("/insert-sensor-config/<string:sensor_id>/<float:threshold>/<string:comp_id>/<float:mode>", methods=['GET'])
-def insert_sensor_config(sensor_id, threshold, comp_id, mode):
-    insert_document = {'sensor_id': sensor_id, 'threshold': threshold, 'comp_id': comp_id, 'mode': mode}
-    comp_id = str(sensor_config_table.insert(insert_document))
+@app.route("/insert-sensor-config", methods=['POST'])
+def insert_sensor_config():
+    content = request.get_json()
+    comp_id = str(sensor_config_table.insert(content))
     result = {"id": comp_id}
     return json.dumps(result), 200
 
