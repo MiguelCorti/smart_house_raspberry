@@ -7,7 +7,7 @@ import requests
 client = MongoClient("localhost", 27017)
 smart_house_db = client["smart_house"]
 components_table = smart_house_db["component"]
-time_constraint_table = smart_house_db["time_constraint"]
+sensor_config_table = smart_house_db["sensor_config"]
 components = {}
 ports_used = set()
 config_to_process = []
@@ -57,7 +57,7 @@ def load_from_db():
 
 
 def get_all_config():
-    table_configs = time_constraint_table.find()
+    table_configs = sensor_config_table.find()
     for config in table_configs:
         if str(config['_id']) not in config_used:
             config_to_process.append(config)
@@ -71,13 +71,20 @@ while True:
     delta = timedelta(seconds=2)
     url = "http://localhost:5000/"
     for config in config_to_process:
+        sensor_id = config['sensor_id']
+        threshold = config['threshold']
         comp_id = config['comp_id']
         comp_mode = config['mode']
-        config_time_list = config['action_time'].split(":")
-        config_time = datetime(year=cur_time.year, month=cur_time.month, day=cur_time.day,
-                               hour=int(config_time_list[0]), minute=int(config_time_list[1]))
-        if config_time >= cur_time - delta and config_time <= cur_time + delta:
-            comp_name = components[comp_id]
+        sensor_name = components[sensor_id]
+        comp_name = components[comp_id]
+        cur_value = 0.0
+        if sensor_name == 'distance_sensor':
+            url += 'get-distance-sensor/%s' % sensor_id
+            cur_value = float(requests.get(url).content)
+        elif sensor_name == 'light_sensor':
+            url += 'get-light-sensor/%s' % sensor_id
+            cur_value = float(requests.get(url).content)
+        if cur_value < threshold:
             if comp_name == 'led':
                 url += 'control-led/%s/%f' % (comp_id, comp_mode)
             else:

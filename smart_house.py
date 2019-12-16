@@ -138,17 +138,17 @@ def get_distance_sensor(comp_id):
     sensor, comp_name = components[comp_id]
     if comp_name != 'distance_sensor':
         return "Esse componente nao eh um sensor de distancia", 400
-    return sensor.distance, 200
+    return ('%.2f' % sensor.distance), 200
 
 
 @app.route("/get-light-sensor/<string:comp_id>", methods=['GET'])
-def get_distance_sensor(comp_id):
+def get_light_sensor(comp_id):
     if comp_id not in components:
         return "Erro ao encontrar sensor de luz", 400
     sensor, comp_name = components[comp_id]
     if comp_name != 'light_sensor':
         return "Esse componente nao eh um sensor de luz", 400
-    return sensor.value, 200
+    return ('%.2f' % sensor.value), 200
 
 # rode o servidor
 load_from_db()
