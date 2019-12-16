@@ -106,7 +106,9 @@ def insert_sensor_config():
 def control_motor(comp_id, speed, mode):
     if comp_id not in components:
         return "Erro ao encontrar motor", 400
-    motor = components[comp_id]
+    comp_name, motor = components[comp_id]
+    if comp_name != 'motor':
+        return "Esse componente nao eh um motor", 400
     if mode > 0:
         motor.forward(speed)
     else:
@@ -119,12 +121,34 @@ def control_led(comp_id, mode):
     print(components)
     if comp_id not in components:
         return "Erro ao encontrar led", 400
-    led = components[comp_id]
+    led, comp_name = components[comp_id]
+    if comp_name != 'motor':
+        return "Esse componente nao eh um led", 400
     if mode > 0:
         led.on()
     else:
         led.off()
     return "Sucesso!", 200
+
+
+@app.route("/get-distance-sensor/<string:comp_id>", methods=['GET'])
+def get_distance_sensor(comp_id):
+    if comp_id not in components:
+        return "Erro ao encontrar sensor de distancia", 400
+    sensor, comp_name = components[comp_id]
+    if comp_name != 'distance_sensor':
+        return "Esse componente nao eh um sensor de distancia", 400
+    return sensor.distance, 200
+
+
+@app.route("/get-light-sensor/<string:comp_id>", methods=['GET'])
+def get_distance_sensor(comp_id):
+    if comp_id not in components:
+        return "Erro ao encontrar sensor de luz", 400
+    sensor, comp_name = components[comp_id]
+    if comp_name != 'light_sensor':
+        return "Esse componente nao eh um sensor de luz", 400
+    return sensor.value, 200
 
 # rode o servidor
 load_from_db()
