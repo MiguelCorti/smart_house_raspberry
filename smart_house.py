@@ -38,31 +38,34 @@ def find_component_db(comp_id):
 def check_valid_component(document):
     return 'ports' in document and 'env' in document and 'component' in document
 
-
-def add_component(comp_id, data):
-    if not check_valid_component(data):
-        return False
+def check_ports(data):
     ports = data['ports']
     for port in ports:
         if port in ports_used:
             return False
-    if data['component'] == 'led':
-        components[comp_id] = (data['component'], LED(int(ports[0])))
-    elif data['component'] == 'motor':
+    if data['component'] == 'motor':
         if len(ports) < 2:
             return False
-        components[comp_id] = (data['component'], Motor(int(ports[0]), int(ports[1])))
     elif data['component'] == 'distance_sensor':
         if len(ports) < 2:
             return False
-        components[comp_id] = (data['component'], DistanceSensor(trigger=int(ports[0]), echo=int(ports[1])))
+    return True
+
+def add_component(comp_id, data):
+    ports = data['ports']
+    if data['component'] == 'led':
+        components[comp_id] = (LED(int(ports[0])), data['component'])
+    elif data['component'] == 'motor':
+        components[comp_id] = (Motor(int(ports[0]), int(ports[1])), data['component'])
+    elif data['component'] == 'distance_sensor':
+        components[comp_id] = (DistanceSensor(trigger=int(ports[0]), echo=int(ports[1])), data['component'])
     elif data['component'] == 'motion_sensor':
-        components[comp_id] = (data['component'], MotionSensor(int(ports[0])))
+        components[comp_id] = (MotionSensor(int(ports[0])), data['component'])
     elif data['component'] == 'light_sensor':
-        components[comp_id] = (data['component'], LightSensor(int(ports[0])))
+        components[comp_id] = (LightSensor(int(ports[0])), data['component'])
     for port in ports:
         ports_used.add(port)
-    return True
+    return
 
 
 def load_from_db():
@@ -78,10 +81,10 @@ def insert_component():
     content = request.get_json()
     if not check_valid_component(content):
         return "Esse documento não é válido", 400
-    comp_id = str(components_table.insert(content))
-    could_add = add_component(comp_id, content)
-    if not could_add:
+    if not check_ports(content):
         return "As portas não são válidas", 400
+    comp_id = str(components_table.insert(content))
+    add_component(comp_id, content)
     result = {"id": comp_id}
     return json.dumps(result), 200
 
@@ -116,15 +119,15 @@ def control_motor(comp_id, speed, mode):
     return "Sucesso", 200
 
 
-@app.route("/control-led/<string:comp_id>/<int:mode>", methods=['GET'])
+@app.route("/control-led/<string:comp_id>/<float:mode>", methods=['GET'])
 def control_led(comp_id, mode):
     print(components)
     if comp_id not in components:
         return "Erro ao encontrar led", 400
     led, comp_name = components[comp_id]
-    if comp_name != 'motor':
+    if comp_name != 'led':
         return "Esse componente nao eh um led", 400
-    if mode > 0:
+    if mode > 0.0:
         led.on()
     else:
         led.off()

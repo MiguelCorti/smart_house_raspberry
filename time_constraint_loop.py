@@ -70,17 +70,22 @@ while True:
     cur_time = datetime.now()
     delta = timedelta(seconds=2)
     url = "http://localhost:5000/"
+    print("Checando se componente deve ser ativado")
     for config in config_to_process:
         comp_id = config['comp_id']
         comp_mode = config['mode']
         config_time_list = config['action_time'].split(":")
         config_time = datetime(year=cur_time.year, month=cur_time.month, day=cur_time.day,
                                hour=int(config_time_list[0]), minute=int(config_time_list[1]))
+        print(config_time)
+        print(cur_time)
         if config_time >= cur_time - delta and config_time <= cur_time + delta:
+            print("COMPONENTE ATIVADO!")
             comp_name = components[comp_id]
             if comp_name == 'led':
-                url += 'control-led/%s/%f' % (comp_id, comp_mode)
+                url += 'control-led/%s/%.2f' % (comp_id, comp_mode)
             else:
-                url += 'control-motor/%s/%f/1.0' % (comp_id, comp_mode)
-            requests.get(url)
+                url += 'control-motor/%s/%.2f/1.0' % (comp_id, comp_mode)
+            response = requests.get(url)
+            print(response)
     sleep(2)

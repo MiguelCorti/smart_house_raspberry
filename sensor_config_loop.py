@@ -84,6 +84,8 @@ while True:
         elif sensor_name == 'light_sensor':
             url += 'get-light-sensor/%s' % sensor_id
             cur_value = float(requests.get(url).content)
+        print("Valor atual do sensor: %.2f" % cur_value)
+        print("Valor configurado: %.2f" % threshold)
         if cur_value < threshold:
             if comp_name == 'led':
                 url += 'control-led/%s/%f' % (comp_id, comp_mode)
