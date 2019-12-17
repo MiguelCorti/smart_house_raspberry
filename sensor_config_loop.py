@@ -69,7 +69,7 @@ while True:
     load_from_db()
     cur_time = datetime.now()
     delta = timedelta(seconds=2)
-    url = "http://localhost:5000/"
+    base_url = "http://localhost:5000/"
     for config in config_to_process:
         sensor_id = config['sensor_id']
         threshold = config['threshold']
@@ -79,17 +79,18 @@ while True:
         comp_name = components[comp_id]
         cur_value = 0.0
         if sensor_name == 'distance_sensor':
-            url += 'get-distance-sensor/%s' % sensor_id
+            url = base_url + 'get-distance-sensor/%s' % sensor_id
             cur_value = float(requests.get(url).content)
         elif sensor_name == 'light_sensor':
-            url += 'get-light-sensor/%s' % sensor_id
+            url = base_url + 'get-light-sensor/%s' % sensor_id
             cur_value = float(requests.get(url).content)
         print("Valor atual do sensor: %.2f" % cur_value)
         print("Valor configurado: %.2f" % threshold)
         if cur_value < threshold:
+            print("Alterando o componente: %s" % comp_name)
             if comp_name == 'led':
-                url += 'control-led/%s/%f' % (comp_id, comp_mode)
+                url = base_url + 'control-led/%s/%.2f' % (comp_id, comp_mode)
             else:
-                url += 'control-motor/%s/%f/1.0' % (comp_id, comp_mode)
+                url = base_url + 'control-motor/%s/%.2f' % (comp_id, comp_mode)
             requests.get(url)
     sleep(2)

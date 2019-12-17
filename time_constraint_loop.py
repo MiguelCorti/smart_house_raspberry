@@ -85,7 +85,7 @@ while True:
             if comp_name == 'led':
                 url += 'control-led/%s/%.2f' % (comp_id, comp_mode)
             else:
-                url += 'control-motor/%s/%.2f/1.0' % (comp_id, comp_mode)
+                url += 'control-motor/%s/%.2f' % (comp_id, comp_mode)
             response = requests.get(url)
             print(response)
     sleep(2)

@@ -105,23 +105,19 @@ def insert_sensor_config():
     return json.dumps(result), 200
 
 
-@app.route("/control-motor/<string:comp_id>/<float:speed>/<int:mode>", methods=['GET'])
-def control_motor(comp_id, speed, mode):
+@app.route("/control-motor/<string:comp_id>/<float:speed>", methods=['GET'])
+def control_motor(comp_id, speed):
     if comp_id not in components:
         return "Erro ao encontrar motor", 400
-    comp_name, motor = components[comp_id]
+    motor, comp_name = components[comp_id]
     if comp_name != 'motor':
         return "Esse componente nao eh um motor", 400
-    if mode > 0:
-        motor.forward(speed)
-    else:
-        motor.backward(speed)
+    motor.forward(speed)
     return "Sucesso", 200
 
 
 @app.route("/control-led/<string:comp_id>/<float:mode>", methods=['GET'])
 def control_led(comp_id, mode):
-    print(components)
     if comp_id not in components:
         return "Erro ao encontrar led", 400
     led, comp_name = components[comp_id]
